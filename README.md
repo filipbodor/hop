@@ -41,13 +41,20 @@ Install 'code' command in PATH** from VS Code's Command Palette.
 ```sh
 hop add web ~/Projects/web/web.code-workspace
 hop add calendar ~/Projects/calendar
+hop add ios ~/Projects/App/App.xcworkspace --app xcode
+hop add frontend ~/Projects/frontend --app cursor
 hop add playground                         # Register the current folder
 hop list
 hop web
 ```
 
 Saved `.code-workspace` files open with their configured folders and settings.
-Folders open directly. Your terminal's current directory stays the same.
+Xcode `.xcworkspace` and `.xcodeproj` bundles are supported too. Your terminal's
+current directory stays the same.
+
+`--app` overrides the default editor for one project. Use an editor CLI such as
+`code`, `cursor`, or `idea`; on macOS, use `xcode` or an app name ending in `.app`,
+such as `--app "Android Studio.app"`. App choices appear in the list and picker.
 
 ## Make it yours
 
@@ -55,6 +62,7 @@ Folders open directly. Your terminal's current directory stays the same.
 hop editor code --new-window               # VS Code, in a new window
 hop editor cursor                          # Or another compatible editor CLI
 hop add web ~/Projects/new-web --replace   # Update a saved path
+hop add ios ~/Projects/App/App.xcworkspace --app default --replace # Reset app
 hop remove playground                      # Unregister; keep project files
 hop config                                 # Print the configuration location
 ```
@@ -68,10 +76,14 @@ list; shell aliases and shell syntax are not evaluated.
   "editor": ["code", "--new-window"],
   "projects": {
     "web": "/path/to/web.code-workspace",
-    "calendar": "/path/to/calendar"
+    "calendar": "/path/to/calendar",
+    "ios": {"path": "/path/to/App.xcworkspace", "app": "xcode"}
   }
 }
 ```
+
+Plain paths keep using the default editor. Updating a path with `--replace`
+preserves its app unless you also supply `--app`.
 
 Names accept letters, numbers, hyphens and underscores. Management command names
 are reserved. Running `hop` without a name needs an interactive terminal;
@@ -89,7 +101,7 @@ go test -race ./...
 go vet ./...
 go build -o build/hop ./cmd/hop
 ./build/hop --help
-./scripts/release.sh v0.2.0                # Build macOS/Linux archives and checksums
+./scripts/release.sh v0.3.0                # Build macOS/Linux archives and checksums
 ```
 
 Tests use temporary configurations and a fake editor. They never open your IDE.

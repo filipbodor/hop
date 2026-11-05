@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- Choose an app per project with `hop add NAME PATH --app APP`.
+- Support Xcode and other macOS `.app` applications alongside editor CLIs.
+- Show app overrides in the project list and picker; preserve existing path-only entries.
+- Keep the app when updating a saved path, or reset it with `--app default`.
+
 ## 0.2.0
 
 - Rename dev-workspaces to Hop, with `hop` as the command.
