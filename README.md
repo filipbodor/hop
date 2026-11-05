@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" width="240" alt="Hop logo: a hopping rabbit in coral and violet">
+</p>
+
 # Hop
 
 **Your editor workspaces, one command away.**
