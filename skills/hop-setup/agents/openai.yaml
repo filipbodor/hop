@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hop Setup"
+  short_description: "Configure project shortcuts and preferred apps"
+  default_prompt: "Use $hop-setup to configure my project shortcuts and preferred apps."

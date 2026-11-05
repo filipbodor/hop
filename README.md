@@ -98,6 +98,20 @@ scripts can use `hop NAME`.
 dev-workspaces` to remove the old Python command; your config stays in place.
 If you want to keep `dev` as a shortcut, create a symlink to the installed `hop` binary.
 
+## Use with coding agents
+
+The optional [hop-setup skill](skills/hop-setup/SKILL.md) helps an agent register
+projects, choose apps, and update shortcuts while preserving your other settings.
+From a cloned copy of this repository, install it for Codex:
+
+```sh
+mkdir -p ~/.codex/skills
+cp -R skills/hop-setup ~/.codex/skills/
+```
+
+For Claude Code, use `~/.claude/skills/` instead. Then ask your agent to configure
+Hop for your projects. The Hop executable must be installed separately.
+
 ## Development
 
 ```sh
