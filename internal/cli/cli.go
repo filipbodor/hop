@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,7 +27,8 @@ const help = `Hop — your editor workspaces, one command away.
 
   hop NAME                    Open a registered project
   hop                         Search projects interactively
-  hop add NAME [PATH]         Register a folder or .code-workspace file
+  hop add NAME [PATH]         Register a folder or saved workspace
+  hop add NAME PATH --app APP Choose an app for this project (code, cursor, xcode…)
   hop add NAME PATH --replace Update a saved path
   hop list                    List registered projects
   hop remove NAME             Unregister; keep project files
@@ -94,12 +96,28 @@ func (a App) run(args []string) (int, error) {
 	switch command {
 	case "add":
 		replace, positional, options := false, []string{}, true
-		for _, arg := range args {
+		app, appSet := "", false
+		for i := 0; i < len(args); i++ {
+			arg := args[i]
 			switch {
 			case options && arg == "--":
 				options = false
 			case options && arg == "--replace":
 				replace = true
+			case options && (arg == "--app" || strings.HasPrefix(arg, "--app=")):
+				if arg == "--app" {
+					if i+1 >= len(args) || strings.HasPrefix(args[i+1], "--") {
+						return 0, usageError("--app requires an app, for example: --app xcode")
+					}
+					i++
+					app = args[i]
+				} else {
+					app = strings.TrimPrefix(arg, "--app=")
+				}
+				if strings.TrimSpace(app) == "" {
+					return 0, usageError("--app must not be empty; use --app default to reset it")
+				}
+				appSet = true
 			case options && strings.HasPrefix(arg, "-"):
 				return 0, usageError("unknown add option: " + arg)
 			default:
@@ -107,7 +125,7 @@ func (a App) run(args []string) (int, error) {
 			}
 		}
 		if len(positional) < 1 || len(positional) > 2 {
-			return 0, usageError("usage: hop add NAME [PATH] [--replace]")
+			return 0, usageError("usage: hop add NAME [PATH] [--app APP] [--replace]")
 		}
 		name, target := positional[0], "."
 		if len(positional) == 2 {
@@ -120,14 +138,22 @@ func (a App) run(args []string) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		if _, exists := c.Projects[name]; exists && !replace {
+		registered, exists := c.Projects[name]
+		if exists && !replace {
 			return 0, fmt.Errorf("project %q already exists; use --replace to update it", name)
 		}
-		c.Projects[name] = target
+		registered.Path = target
+		if appSet {
+			registered.App = app
+			if app == "default" {
+				registered.App = ""
+			}
+		}
+		c.Projects[name] = registered
 		if err := saveConfig(path, c); err != nil {
 			return 0, err
 		}
-		fmt.Fprintf(a.Out, "Registered %s: %s\n", name, target)
+		fmt.Fprintf(a.Out, "Registered %s: %s%s\n", name, target, appLabel(registered))
 	case "remove":
 		if len(args) != 1 {
 			return 0, usageError("usage: hop remove NAME")
@@ -148,13 +174,14 @@ func (a App) run(args []string) (int, error) {
 			fmt.Fprintln(a.Out, "No projects yet. Register one with: hop add NAME [PATH]")
 		}
 		for _, name := range sortedNames(c.Projects) {
-			value := c.Projects[name]
+			registered := c.Projects[name]
+			value := registered.Path
 			expanded, err := expandHome(value)
 			missing := ""
 			if _, statErr := os.Stat(expanded); err != nil || statErr != nil {
 				missing = " [missing]"
 			}
-			fmt.Fprintf(a.Out, "%s\t%s%s\n", name, value, missing)
+			fmt.Fprintf(a.Out, "%s\t%s%s%s\n", name, value, appLabel(registered), missing)
 		}
 	case "editor":
 		if len(args) == 0 {
@@ -195,11 +222,15 @@ func (a App) run(args []string) (int, error) {
 		if !exists {
 			return 0, fmt.Errorf("unknown project %q.%s", name, suggest(name, c.Projects))
 		}
-		target, err := targetPath(value)
+		target, err := targetPath(value.Path)
 		if err != nil {
 			return 0, err
 		}
-		cmd := exec.Command(c.Editor[0], append(c.Editor[1:], target)...)
+		editor, err := editorFor(value, c.Editor, runtime.GOOS)
+		if err != nil {
+			return 0, err
+		}
+		cmd := exec.Command(editor[0], append(editor[1:], target)...)
 		cmd.Stdin, cmd.Stdout, cmd.Stderr = a.In, a.Out, a.Err
 		if err := cmd.Run(); err != nil {
 			var exited *exec.ExitError
@@ -210,7 +241,7 @@ func (a App) run(args []string) (int, error) {
 				return exited.ExitCode(), nil
 			}
 			if errors.Is(err, exec.ErrNotFound) || errors.Is(err, os.ErrNotExist) {
-				return 0, fmt.Errorf("editor %q not found; install its CLI or use hop editor COMMAND", c.Editor[0])
+				return 0, fmt.Errorf("editor %q not found; install its CLI or update the project's --app or hop editor COMMAND", editor[0])
 			}
 			return 0, err
 		}
@@ -220,7 +251,7 @@ func (a App) run(args []string) (int, error) {
 
 func isHelp(arg string) bool { return arg == "--help" || arg == "-h" }
 
-func sortedNames(projects map[string]string) []string {
+func sortedNames(projects map[string]project) []string {
 	names := make([]string, 0, len(projects))
 	for name := range projects {
 		names = append(names, name)
@@ -229,7 +260,7 @@ func sortedNames(projects map[string]string) []string {
 	return names
 }
 
-func (a App) choose(projects map[string]string) (string, error) {
+func (a App) choose(projects map[string]project) (string, error) {
 	if len(projects) == 0 {
 		return "", errors.New("no projects yet; register one with: hop add NAME [PATH]")
 	}
@@ -241,7 +272,7 @@ func (a App) choose(projects map[string]string) (string, error) {
 	scanner := bufio.NewScanner(a.In)
 	for {
 		for i, name := range matches {
-			fmt.Fprintf(a.Out, "  %d. %s  %s\n", i+1, name, projects[name])
+			fmt.Fprintf(a.Out, "  %d. %s  %s%s\n", i+1, name, projects[name].Path, appLabel(projects[name]))
 		}
 		fmt.Fprint(a.Out, "Open a name or number, type to filter, or Enter to cancel: ")
 		if !scanner.Scan() {
@@ -273,13 +304,37 @@ func (a App) choose(projects map[string]string) (string, error) {
 	}
 }
 
-func suggest(name string, projects map[string]string) string {
+func suggest(name string, projects map[string]project) string {
 	for _, candidate := range sortedNames(projects) {
 		if editDistance(strings.ToLower(name), strings.ToLower(candidate)) <= max(1, len(candidate)/3) {
 			return fmt.Sprintf(" Did you mean %s?", candidate)
 		}
 	}
 	return " Use hop list."
+}
+
+func appLabel(p project) string {
+	if p.App != "" {
+		return " [" + p.App + "]"
+	}
+	return ""
+}
+
+func editorFor(p project, fallback []string, goos string) ([]string, error) {
+	if p.App == "" || p.App == "default" {
+		return append([]string(nil), fallback...), nil
+	}
+	app := p.App
+	if strings.EqualFold(app, "xcode") || strings.HasSuffix(strings.ToLower(app), ".app") {
+		if goos != "darwin" {
+			return nil, fmt.Errorf("app %q requires macOS", app)
+		}
+		if strings.EqualFold(app, "xcode") {
+			app = "Xcode"
+		}
+		return []string{"/usr/bin/open", "-a", app}, nil
+	}
+	return []string{app}, nil
 }
 
 func editDistance(a, b string) int {

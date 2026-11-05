@@ -12,8 +12,51 @@ import (
 
 type config struct {
 	Editor   []string
-	Projects map[string]string
+	Projects map[string]project
 	extra    map[string]json.RawMessage
+}
+
+// A plain path remains valid for projects using the default editor.
+type project struct {
+	Path  string
+	App   string
+	extra map[string]json.RawMessage
+}
+
+func (p *project) UnmarshalJSON(data []byte) error {
+	*p = project{}
+	if err := json.Unmarshal(data, &p.Path); err == nil && string(data) != "null" {
+		return nil
+	}
+	if err := json.Unmarshal(data, &p.extra); err != nil || p.extra == nil {
+		return errors.New("project must be a path string or an object with path and optional app")
+	}
+	if err := json.Unmarshal(p.extra["path"], &p.Path); err != nil {
+		return errors.New("project path must be a nonempty string")
+	}
+	if value, ok := p.extra["app"]; ok {
+		if err := json.Unmarshal(value, &p.App); err != nil || p.App == "" {
+			return errors.New("project app must be a nonempty string")
+		}
+	}
+	return nil
+}
+
+func (p project) MarshalJSON() ([]byte, error) {
+	if p.App == "" && len(p.extra) == 0 {
+		return json.Marshal(p.Path)
+	}
+	data := make(map[string]json.RawMessage, len(p.extra)+2)
+	for key, value := range p.extra {
+		data[key] = value
+	}
+	data["path"], _ = json.Marshal(p.Path)
+	if p.App != "" {
+		data["app"], _ = json.Marshal(p.App)
+	} else {
+		delete(data, "app")
+	}
+	return json.Marshal(data)
 }
 
 func configPath() (string, error) {
@@ -37,7 +80,7 @@ func configPath() (string, error) {
 }
 
 func loadConfig(path string) (config, error) {
-	c := config{Editor: []string{"code"}, Projects: map[string]string{}}
+	c := config{Editor: []string{"code"}, Projects: map[string]project{}}
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return c, nil
@@ -61,14 +104,14 @@ func loadConfig(path string) (config, error) {
 	}
 	if value, exists := c.extra["projects"]; exists {
 		if err := json.Unmarshal(value, &c.Projects); err != nil || c.Projects == nil {
-			return c, errors.New("config projects must be a name-to-path object")
+			return c, errors.New("config projects must map names to paths or objects with path and optional app")
 		}
 	}
-	for name, path := range c.Projects {
+	for name, project := range c.Projects {
 		if err := validateName(name); err != nil {
 			return c, err
 		}
-		if path == "" {
+		if project.Path == "" {
 			return c, fmt.Errorf("project %q has an empty path", name)
 		}
 	}

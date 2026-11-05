@@ -64,7 +64,7 @@ func TestRegisterAndList(t *testing.T) {
 	if !strings.Contains(h.out.String(), "web\t"+h.workspace) || !strings.HasPrefix(h.out.String(), "calendar\t") {
 		t.Fatal(h.out.String())
 	}
-	if h.config(t).Projects["web"] != h.workspace {
+	if h.config(t).Projects["web"].Path != h.workspace {
 		t.Fatal("workspace path changed")
 	}
 }
@@ -76,7 +76,7 @@ func TestDefaultAndRelativePath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if h.config(t).Projects["current"] != want {
+	if h.config(t).Projects["current"].Path != want {
 		t.Fatal("default path is not cwd")
 	}
 	relative, err := filepath.Rel(want, h.folder)
@@ -84,7 +84,7 @@ func TestDefaultAndRelativePath(t *testing.T) {
 		t.Fatal(err)
 	}
 	h.want(t, 0, "add", "relative", relative)
-	if h.config(t).Projects["relative"] != h.folder {
+	if h.config(t).Projects["relative"].Path != h.folder {
 		t.Fatal("relative path resolved incorrectly")
 	}
 }
@@ -99,7 +99,7 @@ func TestHomeExpansion(t *testing.T) {
 		}
 	}
 	h.want(t, 0, "add", "web", "~/web.code-workspace")
-	if h.config(t).Projects["web"] != h.workspace {
+	if h.config(t).Projects["web"].Path != h.workspace {
 		t.Fatal("home path resolved incorrectly")
 	}
 }
@@ -114,7 +114,7 @@ func TestReplaceRequired(t *testing.T) {
 		t.Fatal("duplicate changed config")
 	}
 	h.want(t, 0, "add", "web", h.workspace, "--replace")
-	if h.config(t).Projects["web"] != h.workspace {
+	if h.config(t).Projects["web"].Path != h.workspace {
 		t.Fatal("replacement failed")
 	}
 }
@@ -270,7 +270,7 @@ func TestConfigLocationAndEmptyList(t *testing.T) {
 }
 
 func TestPicker(t *testing.T) {
-	projects := map[string]string{"calendar": "/example/calendar", "web": "/example/web"}
+	projects := map[string]project{"calendar": {Path: "/example/calendar"}, "web": {Path: "/example/web"}}
 	for _, tc := range []struct {
 		input, want string
 		eof         bool
@@ -351,7 +351,7 @@ func TestFailedSaveCleansTemporaryFile(t *testing.T) {
 	if err := os.MkdirAll(h.app.ConfigPath, 0700); err != nil {
 		t.Fatal(err)
 	}
-	if err := saveConfig(h.app.ConfigPath, config{Editor: []string{"code"}, Projects: map[string]string{}}); err == nil {
+	if err := saveConfig(h.app.ConfigPath, config{Editor: []string{"code"}, Projects: map[string]project{}}); err == nil {
 		t.Fatal("expected rename error")
 	}
 	entries, err := os.ReadDir(filepath.Dir(h.app.ConfigPath))
@@ -372,7 +372,7 @@ func TestLegacyConfigAndNewConfigPrecedence(t *testing.T) {
 	if err != nil || got != newPath {
 		t.Fatalf("got %s %v", got, err)
 	}
-	c := config{Editor: []string{"code", "--new-window"}, Projects: map[string]string{"web": "/example/web"}}
+	c := config{Editor: []string{"code", "--new-window"}, Projects: map[string]project{"web": {Path: "/example/web"}}}
 	if err := saveConfig(legacy, c); err != nil {
 		t.Fatal(err)
 	}
