@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: "1.27.x"
+      - run: go vet ./...
+      - run: go test -race ./...
+      - run: ./scripts/release.sh "$RELEASE_TAG"
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+      - run: |
+          cd dist
+          shasum -a 256 -c checksums.txt
+          tar -xzf "hop_${RELEASE_TAG}_linux_amd64.tar.gz"
+          ./hop --version
+      - run: gh release create "$RELEASE_TAG" dist/*.tar.gz dist/checksums.txt --verify-tag --title "Hop $RELEASE_TAG" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
