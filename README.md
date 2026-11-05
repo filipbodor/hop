@@ -13,6 +13,19 @@ hop                  # Interactive picker: select a number or type to filter
 
 ## Install
 
+Download the archive for your machine from [Releases](https://github.com/filipbodor/hop/releases/latest):
+`darwin` means macOS, `arm64` means Apple Silicon or Linux ARM, and `amd64` means Intel/AMD.
+Extract it and put `hop` on your PATH, for example:
+
+```sh
+tar -xzf hop_VERSION_darwin_arm64.tar.gz   # Use your downloaded filename
+mkdir -p ~/.local/bin
+install -m 755 hop ~/.local/bin/hop
+```
+
+No Python, Go, or other language runtime is needed. Add `~/.local/bin` to your
+PATH if it isn't there already. Checksums are included with each release.
+
 With Go 1.26+ installed, you can also build and install directly:
 
 ```sh
@@ -76,7 +89,9 @@ go test -race ./...
 go vet ./...
 go build -o build/hop ./cmd/hop
 ./build/hop --help
+./scripts/release.sh v0.2.0                # Build macOS/Linux archives and checksums
 ```
 
 Tests use temporary configurations and a fake editor. They never open your IDE.
+Tag pushes run tests, build release archives, and publish a GitHub release.
 Bug reports and focused contributions are welcome. [MIT licensed](LICENSE).
