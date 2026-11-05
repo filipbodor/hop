@@ -1,4 +1,4 @@
-# dev-workspaces
+# Hop
 
 **Your editor workspaces, one command away.**
 
@@ -6,50 +6,49 @@ Stop browsing through File → Open Workspace. Register a folder or saved VS Cod
 workspace once, then open it from any terminal:
 
 ```sh
-dev web
-dev calendar
-dev                  # Interactive picker: select a number or type to filter
+hop web
+hop calendar
+hop                  # Interactive picker: select a number or type to filter
 ```
 
 ## Install
 
-Requires Python 3.11+ on macOS or Linux. Install with [uv](https://docs.astral.sh/uv/):
+With Go 1.26+ installed, you can also build and install directly:
 
 ```sh
-uv tool install git+https://github.com/filipbodor/dev-workspaces.git
+go install github.com/filipbodor/hop/cmd/hop@latest
 ```
 
-Make sure uv's tool directory is on your PATH (`uv tool update-shell` can help).
+Go installs to `$(go env GOPATH)/bin` by default; that directory must be on your PATH.
 VS Code's `code` command must also be available. On macOS, run **Shell Command:
 Install 'code' command in PATH** from VS Code's Command Palette.
 
 ## Register your projects
 
 ```sh
-dev add web ~/Projects/web/web.code-workspace
-dev add calendar ~/Projects/calendar
-dev add playground                         # Register the current folder
-dev list
-dev web
+hop add web ~/Projects/web/web.code-workspace
+hop add calendar ~/Projects/calendar
+hop add playground                         # Register the current folder
+hop list
+hop web
 ```
 
-Saved `.code-workspace` files open as workspaces, including their configured
-folders and settings. Folders open directly. The command opens the editor;
-your terminal's current directory stays the same.
+Saved `.code-workspace` files open with their configured folders and settings.
+Folders open directly. Your terminal's current directory stays the same.
 
 ## Make it yours
 
 ```sh
-dev editor code --new-window               # VS Code, in a new window
-dev editor cursor                          # Or another compatible editor CLI
-dev add web ~/Projects/new-web --replace   # Update a saved path
-dev remove playground                      # Unregister; keep all project files
-dev config                                 # Print the configuration location
+hop editor code --new-window               # VS Code, in a new window
+hop editor cursor                          # Or another compatible editor CLI
+hop add web ~/Projects/new-web --replace   # Update a saved path
+hop remove playground                      # Unregister; keep project files
+hop config                                 # Print the configuration location
 ```
 
-Configuration stays on your machine at `~/.config/dev-workspaces/config.json`
-(or under `XDG_CONFIG_HOME`). Nothing is uploaded. The editor is stored as an
-argument list; shell aliases and shell syntax are not evaluated.
+Configuration stays on your machine at `~/.config/hop/config.json` (or under
+`XDG_CONFIG_HOME`). Nothing is uploaded. The editor is stored as an argument
+list; shell aliases and shell syntax are not evaluated.
 
 ```json
 {
@@ -62,18 +61,21 @@ argument list; shell aliases and shell syntax are not evaluated.
 ```
 
 Names accept letters, numbers, hyphens and underscores. Management command names
-are reserved. Running `dev` without a name needs an interactive terminal;
-scripts can use `dev NAME`.
+are reserved. Running `hop` without a name needs an interactive terminal;
+scripts can use `hop NAME`.
+
+**Upgrading from dev-workspaces:** Hop reuses your existing
+`~/.config/dev-workspaces/config.json` when no Hop config exists. Run `uv tool uninstall
+dev-workspaces` to remove the old Python command; your config stays in place.
+If you want to keep `dev` as a shortcut, create a symlink to the installed `hop` binary.
 
 ## Development
 
 ```sh
-uv venv
-uv pip install -e . ruff build
-.venv/bin/python -m unittest discover -s tests -v
-.venv/bin/ruff check .
-.venv/bin/ruff format --check .
-.venv/bin/python -m build
+go test -race ./...
+go vet ./...
+go build -o build/hop ./cmd/hop
+./build/hop --help
 ```
 
 Tests use temporary configurations and a fake editor. They never open your IDE.

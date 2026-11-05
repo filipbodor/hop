@@ -1,7 +1,8 @@
+# Leftovers from the original Python installation
 .venv/
 __pycache__/
 *.egg-info/
+.ruff_cache/
 dist/
 build/
-.ruff_cache/
 .DS_Store
