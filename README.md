@@ -30,6 +30,16 @@ install -m 755 hop ~/.local/bin/hop
 No Python, Go, or other language runtime is needed. Add `~/.local/bin` to your
 PATH if it isn't there already. Checksums are included with each release.
 
+To verify your download before extracting it, download `checksums.txt` from the
+same release into the archive's directory, then run:
+
+```sh
+shasum -a 256 --ignore-missing -c checksums.txt
+```
+
+Your downloaded archive should report `OK`. On Linux, you can use
+`sha256sum --ignore-missing -c checksums.txt` instead.
+
 With Go 1.26+ installed, you can also build and install directly:
 
 ```sh
