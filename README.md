@@ -122,6 +122,17 @@ cp -R skills/hop-setup ~/.codex/skills/
 For Claude Code, use `~/.claude/skills/` instead. Then ask your agent to configure
 Hop for your projects. The Hop executable must be installed separately.
 
+## Troubleshooting
+
+- **Editor not found:** check that the editor command is on your terminal's PATH
+  (for example, `command -v code`). Set the default with `hop editor code`, or
+  update a project's override with
+  `hop add NAME /path/to/project --app cursor --replace`.
+- **Project folder moved:** run `hop list` to check the saved path, then update it
+  with `hop add NAME /new/path --replace`. The project's app choice is preserved.
+- **Unexpected configuration:** run `hop config` to see which file Hop is using.
+  Check `XDG_CONFIG_HOME` and the legacy dev-workspaces fallback described above.
+
 ## Development
 
 ```sh
