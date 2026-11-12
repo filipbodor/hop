@@ -35,6 +35,10 @@ const help = `Hop — your editor workspaces, one command away.
   hop editor COMMAND [ARGS]   Set editor executable and arguments
   hop config                  Print the private config location
   hop open [NAME]             Explicit form of hop NAME
+  hop worktree [WORDS...]     Pick a Git worktree and open editor + Sublime Merge
+  hop worktree --list         List worktrees from current/registered repositories
+  hop worktree --repo PATH    Limit discovery to one repository
+  hop init zsh                Print the hwt helper to also move this terminal
   hop --version               Show version
 `
 
@@ -74,6 +78,13 @@ func (a App) run(args []string) (int, error) {
 			command, args = args[0], args[1:]
 		}
 	}
+	if command == "init" {
+		if len(args) != 1 || args[0] != "zsh" {
+			return 0, usageError("usage: hop init zsh")
+		}
+		fmt.Fprint(a.Out, worktreeZsh)
+		return 0, nil
+	}
 	path := a.ConfigPath
 	if path == "" {
 		var err error
@@ -94,6 +105,8 @@ func (a App) run(args []string) (int, error) {
 		return 0, err
 	}
 	switch command {
+	case "worktree":
+		return a.openWorktree(c, args)
 	case "add":
 		replace, positional, options := false, []string{}, true
 		app, appSet := "", false

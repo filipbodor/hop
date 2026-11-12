@@ -108,7 +108,9 @@ func loadConfig(path string) (config, error) {
 		}
 	}
 	for name, project := range c.Projects {
-		if err := validateName(name); err != nil {
+		// These names became commands later; existing registries still open them
+		// explicitly with `hop open NAME`, while new registrations reserve them.
+		if err := validateName(name); err != nil && name != "worktree" && name != "init" {
 			return c, err
 		}
 		if project.Path == "" {
@@ -151,6 +153,7 @@ func saveConfig(path string, c config) error {
 var namePattern = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_-]*$`)
 var commands = map[string]bool{
 	"add": true, "remove": true, "list": true, "editor": true, "config": true, "open": true,
+	"worktree": true, "init": true,
 }
 
 func validateName(name string) error {

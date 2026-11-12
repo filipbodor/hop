@@ -89,6 +89,9 @@ func projectFolders(path string) ([]string, error) {
 }
 
 func discoverWorktrees(paths []string) ([]worktree, error) {
+	if _, err := exec.LookPath("git"); err != nil {
+		return nil, fmt.Errorf("Git is required for worktree discovery: %w", err)
+	}
 	seen := map[string]bool{}
 	var result []worktree
 	for _, path := range paths {

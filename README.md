@@ -122,6 +122,55 @@ cp -R skills/hop-setup ~/.codex/skills/
 For Claude Code, use `~/.claude/skills/` instead. Then ask your agent to configure
 Hop for your projects. The Hop executable must be installed separately.
 
+## Worktree sessions
+
+Git worktrees are separate checkout directories sharing one repository's history.
+Each can keep a different branch and its own uncommitted changes. Hop can discover
+these checkouts and open a selected one across your tools:
+
+```sh
+hop worktree --list
+hop worktree feature-name
+hop worktree --repo /path/to/repository feature-name
+```
+
+Discovery uses Git's worktree metadata from the current repository and registered
+project folders, including local folders listed in JSON `.code-workspace` files.
+Linked worktrees are found even when an agent placed them elsewhere. No recursive
+filesystem scan, repository tasks, or server startup scripts are executed. The
+picker shows repository, branch (or detached HEAD), path, and missing/locked state.
+Malformed workspace files are reported and skipped. Workspace URIs and JSONC
+comments are not interpreted; register an ordinary repository folder if needed.
+
+To also move the **current terminal** into the selected worktree, add this once
+near the end of `.zshrc`:
+
+```sh
+eval "$(hop init zsh)"
+```
+
+Then open a new terminal and use:
+
+```sh
+hwt                       # Pick, open editor + Sublime Merge, and cd
+hwt project review        # Filter by repository, branch, and/or path fragments
+hwt --list                # List only; no apps or directory change
+hwt --path-only review    # Pick and cd without launching apps
+```
+
+The configured default editor is used, with a new window for VS Code/Cursor.
+Sublime Merge uses `smerge` on PATH or the standard macOS app installation. Both
+commands receive the same directory and run with it as their working directory.
+The current terminal then lands there, ready for your usual server command.
+Dependencies and server ports remain per-worktree concerns; Hop does not start or
+stop servers, switch branches, create, prune, or delete worktrees.
+
+Multiple matches require an interactive terminal; add more search words for
+scripts. `hop worktree --path-only` prints only the selected absolute path, with
+picker UI on stderr; cancellation emits no path. Explicit project registrations
+named `init` or `worktree` from an older configuration remain accessible through
+`hop open NAME`; new registrations reserve these command names.
+
 ## Troubleshooting
 
 - **Editor not found:** check that the editor command is on your terminal's PATH
