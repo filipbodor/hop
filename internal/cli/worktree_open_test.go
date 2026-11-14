@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -62,7 +63,7 @@ func TestWorktreeLaunchUsesLiteralPathAndKeepsStdoutClean(t *testing.T) {
 	}
 	t.Setenv("PATH", tools+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv("HOP_WORKTREE_CAPTURE", capture)
-	h.want(t, 0, "editor", "code")
+	h.want(t, 0, "editor", "code", "--reuse-window", "--new-window", "-n", "--profile", "Work")
 	h.want(t, 0, "worktree", "--repo", repo, "feature/review")
 	if strings.TrimSpace(h.out.String()) != other {
 		t.Fatal("GUI output polluted destination", h.out.String())
@@ -74,8 +75,28 @@ func TestWorktreeLaunchUsesLiteralPathAndKeepsStdoutClean(t *testing.T) {
 	if strings.Count(string(data), other) != 4 || !strings.Contains(string(data), "--new-window") || !strings.Contains(h.stderr.String(), "GUI-output") {
 		t.Fatal("apps did not receive the same literal cwd and path", string(data), h.stderr.String())
 	}
+	if strings.Count(string(data), "--new-window") != 1 || strings.Contains(string(data), "--reuse-window") || !strings.Contains(string(data), "--profile\nWork\n") {
+		t.Fatal("window flags conflict or other editor preferences were lost", string(data))
+	}
 	if _, err := os.Stat(filepath.Join(other, "PWNED")); !os.IsNotExist(err) {
 		t.Fatal("path was evaluated")
+	}
+}
+
+func TestWorktreeWindowArgumentsPreserveEditorConfiguration(t *testing.T) {
+	for _, test := range []struct{ editor, want []string }{
+		{[]string{"code", "--new-window"}, []string{"code", "--new-window"}},
+		{[]string{"cursor", "-r", "--profile", "Personal"}, []string{"cursor", "--profile", "Personal", "--new-window"}},
+		{[]string{"/usr/local/bin/code-insiders", "--reuse-window=true", "--new-window=false"}, []string{"/usr/local/bin/code-insiders", "--new-window"}},
+		{[]string{"idea", "-r"}, []string{"idea", "-r"}},
+	} {
+		before := append([]string(nil), test.editor...)
+		if got := worktreeEditorCommand(test.editor); !reflect.DeepEqual(got, test.want) {
+			t.Fatalf("got %q, want %q", got, test.want)
+		}
+		if !reflect.DeepEqual(test.editor, before) {
+			t.Fatal("saved editor arguments changed")
+		}
 	}
 }
 

@@ -168,10 +168,7 @@ func (a App) launchWorktree(editor []string, target string) error {
 	if err != nil {
 		return err
 	}
-	command := append([]string(nil), editor...)
-	if base := filepath.Base(command[0]); base == "code" || base == "code-insiders" || base == "cursor" {
-		command = append(command, "--new-window")
-	}
+	command := worktreeEditorCommand(editor)
 	for _, args := range [][]string{append(command, target), {merge, target}} {
 		cmd := exec.Command(args[0], args[1:]...)
 		cmd.Dir = target // GUI CLIs also work when the caller's original cwd was removed.
@@ -181,4 +178,26 @@ func (a App) launchWorktree(editor []string, target string) error {
 		}
 	}
 	return nil
+}
+
+// Worktree sessions need their own window without conflicting with the user's
+// usual reuse-window preference. Never change the saved editor arguments.
+func worktreeEditorCommand(editor []string) []string {
+	command := append([]string(nil), editor...)
+	if len(command) == 0 {
+		return command
+	}
+	base := filepath.Base(command[0])
+	if base != "code" && base != "code-insiders" && base != "cursor" {
+		return command
+	}
+	filtered := []string{command[0]}
+	for _, arg := range command[1:] {
+		if arg == "-n" || arg == "-r" || arg == "--new-window" || arg == "--reuse-window" ||
+			strings.HasPrefix(arg, "--new-window=") || strings.HasPrefix(arg, "--reuse-window=") {
+			continue
+		}
+		filtered = append(filtered, arg)
+	}
+	return append(filtered, "--new-window")
 }
