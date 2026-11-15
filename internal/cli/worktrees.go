@@ -12,7 +12,7 @@ import (
 )
 
 type worktree struct {
-	Path, Branch, Repo               string
+	Path, Branch, Repo, Head         string
 	Detached, Bare, Prunable, Locked bool
 }
 
@@ -38,6 +38,8 @@ func parseWorktrees(data []byte) ([]worktree, error) {
 			return nil, fmt.Errorf("invalid git worktree record %q", key)
 		}
 		switch key {
+		case "HEAD":
+			current.Head = value
 		case "branch":
 			current.Branch = strings.TrimPrefix(value, "refs/heads/")
 		case "detached":
@@ -133,6 +135,9 @@ func (w worktree) label() string {
 	branch := w.Branch
 	if w.Detached {
 		branch = "detached HEAD"
+		if w.Head != "" {
+			branch += " " + w.Head[:min(8, len(w.Head))]
+		}
 	}
 	status := ""
 	if w.Locked {

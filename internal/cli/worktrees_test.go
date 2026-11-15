@@ -81,10 +81,40 @@ func TestWorkspaceFolderDiscovery(t *testing.T) {
 func TestPorcelainDetachedAndUnsupportedPaths(t *testing.T) {
 	data := []byte("worktree /tmp/example with spaces\x00HEAD abc\x00detached\x00locked reason\x00prunable reason\x00\x00")
 	trees, err := parseWorktrees(data)
-	if err != nil || len(trees) != 1 || !trees[0].Detached || !trees[0].Prunable || !trees[0].Locked {
+	if err != nil || len(trees) != 1 || !trees[0].Detached || !trees[0].Prunable || !trees[0].Locked || trees[0].Head != "abc" {
 		t.Fatal(trees, err)
+	}
+	if !strings.Contains(trees[0].label(), "detached HEAD abc") {
+		t.Fatal("short commit id missing from detached label")
 	}
 	if _, err := parseWorktrees([]byte("worktree /tmp/line\nbreak\x00\x00")); err == nil {
 		t.Fatal("accepted ambiguous newline path")
+	}
+}
+
+func TestDetachedWorktreeCanBeSelectedByCommit(t *testing.T) {
+	repo, _ := worktreeFixture(t)
+	detached := filepath.Join(filepath.Dir(repo), "agent-checkout")
+	gitTest(t, repo, "worktree", "add", "--detach", detached, "HEAD")
+	head := gitTest(t, repo, "rev-parse", "HEAD")
+	trees, err := discoverWorktrees([]string{repo})
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, tree := range trees {
+		if tree.Path == detached {
+			found = tree.Detached && tree.Head == head && strings.Contains(tree.label(), "detached HEAD "+head[:8])
+		} else if strings.Contains(tree.label(), head[:8]) {
+			t.Fatal("named branches should keep their readable branch labels")
+		}
+	}
+	if !found {
+		t.Fatal("detached checkout did not expose its commit")
+	}
+	h := newHarness(t)
+	h.want(t, 0, "worktree", "--repo", repo, "--path-only", head[:8])
+	if strings.TrimSpace(h.out.String()) != detached {
+		t.Fatal("commit filter selected the wrong worktree", h.out.String())
 	}
 }

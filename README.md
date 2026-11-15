@@ -138,7 +138,9 @@ Discovery uses Git's worktree metadata from the current repository and registere
 project folders, including local folders listed in JSON `.code-workspace` files.
 Linked worktrees are found even when an agent placed them elsewhere. No recursive
 filesystem scan, repository tasks, or server startup scripts are executed. The
-picker shows repository, branch (or detached HEAD), path, and missing/locked state.
+picker shows repository, branch (or detached HEAD with its short commit ID), path,
+and missing/locked state. Detached checkouts can also be filtered by that commit
+ID, which helps distinguish agent-created worktrees without branch names.
 Malformed workspace files are reported and skipped. Workspace URIs and JSONC
 comments are not interpreted; register an ordinary repository folder if needed.
 
