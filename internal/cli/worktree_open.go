@@ -11,17 +11,34 @@ import (
 	"strings"
 )
 
-const worktreeZsh = `# Hop worktree picker: open apps and move this terminal to the same checkout.
+const worktreeZsh = `# Hop worktree picker for changing the current shell directory.
+function hop() {
+    if [[ "${1-}" == "hw" ]]; then
+        shift
+        hwt "$@"
+    else
+        command hop "$@"
+    fi
+}
+
 function hwt() {
-    local destination argument
+    local destination argument repo_argument=0
+    if [[ $# == 1 && ( "$1" == "--help" || "$1" == "-h" ) ]]; then
+        command hop hw "$@"
+        return $?
+    fi
     for argument in "$@"; do
-        [[ "$argument" != "--" ]] || break
-        if [[ "$argument" == "--list" || "$argument" == "--help" || "$argument" == "-h" ]]; then
-            command hop worktree "$@"
-            return $?
+        if (( repo_argument )); then
+            repo_argument=0
+            continue
         fi
+        case "$argument" in
+            --repo) repo_argument=1 ;;
+            --) break ;;
+            --list) command hop wt "$@"; return $? ;;
+        esac
     done
-    destination=$(command hop worktree "$@") || return $?
+    destination=$(command hop wt --path-only "$@") || return $?
     [[ -n "$destination" ]] || return 0
     builtin cd -- "$destination"
 }
@@ -119,7 +136,7 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 		selected = sortedNames(candidates)[0]
 	} else {
 		if !a.Interactive {
-			return 0, errors.New("multiple matching worktrees; use more search words, --list, or run hwt in an interactive terminal")
+			return 0, errors.New("multiple matching worktrees; use more search words, --list, or run in an interactive terminal")
 		}
 		picker := a
 		picker.Out = a.Err // stdout is reserved for the selected path, including under $(...).

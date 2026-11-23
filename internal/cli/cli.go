@@ -41,7 +41,8 @@ const help = `Hop — your editor workspaces, one command away.
   hop wt --code               Open a selected worktree in VS Code only
   hop wt --list               List worktrees from current/registered repositories
   hop wt --repo PATH          Limit discovery to one repository
-  hop init zsh                Print the hwt helper to also move this terminal
+  hop hw [WORDS...]           Pick a worktree and change this terminal's directory (Zsh)
+  hop init zsh                Print the Zsh integration for hop hw and hwt
   hop --version               Show version
 `
 
@@ -87,6 +88,9 @@ func (a App) run(args []string) (int, error) {
 		}
 		fmt.Fprint(a.Out, worktreeZsh)
 		return 0, nil
+	}
+	if command == "hw" {
+		return 0, usageError(`hop hw needs the Zsh integration. In Zsh, run eval "$(hop init zsh)" and try again.`)
 	}
 	path := a.ConfigPath
 	if path == "" {

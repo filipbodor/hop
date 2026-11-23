@@ -143,7 +143,7 @@ hop wt --code feature-name                    # Open just VS Code in a new windo
 interactive terminal to pick a checkout. Search by
 repository, branch, short commit ID, or a fragment of the worktree path. Use
 `--code` to launch VS Code via its `code` command, regardless of your default
-editor. It also works with `hwt` if you want to move your terminal there.
+editor.
 
 Discovery uses Git's worktree metadata from the current repository and registered
 project folders, including local folders listed in JSON `.code-workspace` files.
@@ -155,8 +155,8 @@ ID, which helps distinguish agent-created worktrees without branch names.
 Malformed workspace files are reported and skipped. Workspace URIs and JSONC
 comments are not interpreted; register an ordinary repository folder if needed.
 
-To also move the **current terminal** into the selected worktree, add this once
-near the end of `.zshrc`:
+Use `hop hw` to move the **current terminal** into a worktree without launching
+any apps. In Zsh, add this once near the end of `.zshrc`:
 
 ```sh
 eval "$(hop init zsh)"
@@ -165,24 +165,22 @@ eval "$(hop init zsh)"
 Then open a new terminal and use:
 
 ```sh
-hwt                       # Pick, open editor, and cd
-hwt --merge               # Also open Sublime Merge
-hwt project review        # Filter by repository, branch, and/or path fragments
-hwt --list                # List only; no apps or directory change
-hwt --path-only review    # Pick and cd without launching apps
+hop hw                    # Pick a worktree and cd
+hop hw project review     # Filter by repository, branch, and/or path fragments
+hop hw --list             # List matching worktrees
+hwt                       # Standalone shortcut for hop hw
 ```
 
 The configured editor is used, with a new window for VS Code/Cursor. Use
 `--merge` to also open the checkout in Sublime Merge via `smerge` on PATH or the
 standard macOS app installation. Both apps receive the same checkout directory.
-The current terminal then lands there, ready for your usual server command.
 Dependencies and server ports remain per-worktree concerns; Hop does not start or
 stop servers, switch branches, create, prune, or delete worktrees.
 
 Multiple matches require an interactive terminal; add more search words for
 scripts. `hop wt --path-only` prints only the selected absolute path, with
 picker UI on stderr; cancellation emits no path. Explicit project registrations
-named `init`, `wt`, or `worktree` from an older configuration remain accessible through
+named `hw`, `init`, `wt`, or `worktree` from an older configuration remain accessible through
 `hop open NAME`; new registrations reserve these command names.
 
 ## Troubleshooting

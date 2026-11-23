@@ -137,7 +137,7 @@ func TestExistingRegistrationsKeepNewCommandNames(t *testing.T) {
 	h := newHarness(t)
 	data, _ := json.Marshal(map[string]any{
 		"editor":   []string{"/bin/echo"},
-		"projects": map[string]string{"worktree": h.folder, "wt": h.folder, "init": h.folder},
+		"projects": map[string]string{"worktree": h.folder, "wt": h.folder, "init": h.folder, "hw": h.folder},
 	})
 	if err := os.MkdirAll(filepath.Dir(h.app.ConfigPath), 0o700); err != nil {
 		t.Fatal(err)
@@ -151,6 +151,11 @@ func TestExistingRegistrationsKeepNewCommandNames(t *testing.T) {
 	h.want(t, 0, "open", "wt")
 	if h.out.String() != h.folder+"\n" {
 		t.Fatal(h.out.String())
+	}
+	h.want(t, 0, "open", "hw")
+	h.want(t, 2, "hw")
+	if !strings.Contains(h.stderr.String(), "hop init zsh") {
+		t.Fatal(h.stderr.String())
 	}
 	h.want(t, 0, "init", "zsh")
 	if !strings.Contains(h.out.String(), "function hwt()") {
@@ -172,10 +177,16 @@ func TestZshWorktreeHelperChangesTerminalAndListsWithoutCd(t *testing.T) {
 	configHome := t.TempDir()
 	script := `eval "$(hop init zsh)"
 initial="$PWD"
-hwt --repo "$REPO" --list >/dev/null || exit 41
+hop editor "$XDG_CONFIG_HOME/missing-editor" >/dev/null || exit 40
+hop hw --repo "$REPO" --list >/dev/null || exit 41
 [[ "$PWD" == "$initial" ]] || exit 42
-hwt --repo "$REPO" --path-only feature/review || exit 43
+hop hw --repo "$REPO" feature/review || exit 43
 [[ "$PWD" == "$EXPECTED" ]] || exit 44
+builtin cd -- "$REPO" || exit 45
+hwt --repo "$REPO" feature/review || exit 46
+[[ "$PWD" == "$EXPECTED" ]] || exit 47
+if hop hw --merge --repo "$REPO" feature/review; then exit 48; fi
+[[ "$PWD" == "$EXPECTED" ]] || exit 49
 `
 	cmd := exec.Command(zsh, "-d", "-f", "-c", script)
 	cmd.Dir = repo
