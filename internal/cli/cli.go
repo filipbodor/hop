@@ -35,10 +35,10 @@ const help = `Hop — your editor workspaces, one command away.
   hop editor COMMAND [ARGS]   Set editor executable and arguments
   hop config                  Print the private config location
   hop open [NAME]             Explicit form of hop NAME
-  hop worktree [WORDS...]     Pick a Git worktree and open editor + Sublime Merge
-  hop worktree --code         Open a selected worktree in VS Code only
-  hop worktree --list         List worktrees from current/registered repositories
-  hop worktree --repo PATH    Limit discovery to one repository
+  hop wt [WORDS...]           Pick a worktree and open editor + Sublime Merge (also: hop worktree)
+  hop wt --code               Open a selected worktree in VS Code only
+  hop wt --list               List worktrees from current/registered repositories
+  hop wt --repo PATH          Limit discovery to one repository
   hop init zsh                Print the hwt helper to also move this terminal
   hop --version               Show version
 `
@@ -106,7 +106,7 @@ func (a App) run(args []string) (int, error) {
 		return 0, err
 	}
 	switch command {
-	case "worktree":
+	case "wt", "worktree":
 		return a.openWorktree(c, args)
 	case "add":
 		replace, positional, options := false, []string{}, true

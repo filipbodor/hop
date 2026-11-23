@@ -48,7 +48,7 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 			i++
 			repo = args[i]
 		case options && strings.HasPrefix(args[i], "-"):
-			return 0, usageError("usage: hop worktree [--repo PATH] [--list | --path-only | --code] [WORDS...]")
+			return 0, usageError("usage: hop wt [--repo PATH] [--list | --path-only | --code] [WORDS...]")
 		default:
 			words = append(words, strings.ToLower(args[i]))
 		}

@@ -86,7 +86,7 @@ func TestWorktreeLaunchUsesLiteralPathAndKeepsStdoutClean(t *testing.T) {
 		t.Fatal(err)
 	}
 	h.want(t, 0, "editor", "different-editor")
-	h.want(t, 0, "worktree", "--code", "--repo", repo, "feature/review")
+	h.want(t, 0, "wt", "--code", "--repo", repo, "feature/review")
 	if strings.TrimSpace(h.out.String()) != other {
 		t.Fatal(h.out.String())
 	}
@@ -120,7 +120,10 @@ func TestWorktreeWindowArgumentsPreserveEditorConfiguration(t *testing.T) {
 
 func TestExistingRegistrationsKeepNewCommandNames(t *testing.T) {
 	h := newHarness(t)
-	data, _ := json.Marshal(map[string]any{"projects": map[string]string{"worktree": h.folder, "init": h.folder}})
+	data, _ := json.Marshal(map[string]any{
+		"editor":   []string{"/bin/echo"},
+		"projects": map[string]string{"worktree": h.folder, "wt": h.folder, "init": h.folder},
+	})
 	if err := os.MkdirAll(filepath.Dir(h.app.ConfigPath), 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -129,6 +132,11 @@ func TestExistingRegistrationsKeepNewCommandNames(t *testing.T) {
 	}
 	h.want(t, 0, "list")
 	h.want(t, 1, "add", "worktree", h.folder)
+	h.want(t, 1, "add", "wt", h.folder)
+	h.want(t, 0, "open", "wt")
+	if h.out.String() != h.folder+"\n" {
+		t.Fatal(h.out.String())
+	}
 	h.want(t, 0, "init", "zsh")
 	if !strings.Contains(h.out.String(), "function hwt()") {
 		t.Fatal(h.out.String())

@@ -132,13 +132,14 @@ Each can keep a different branch and its own uncommitted changes. Hop can discov
 these checkouts and open a selected one across your tools:
 
 ```sh
-hop worktree --list
-hop worktree feature-name
-hop worktree --repo /path/to/repository feature-name
-hop worktree --code feature-name                    # Open just VS Code in a new window
+hop wt --list
+hop wt feature-name
+hop wt --repo /path/to/repository feature-name
+hop wt --code feature-name                    # Open just VS Code in a new window
 ```
 
-Omit the search words in an interactive terminal to pick a checkout. Search by
+`hop worktree` is the long form of `hop wt`. Omit the search words in an
+interactive terminal to pick a checkout. Search by
 repository, branch, short commit ID, or a fragment of the worktree path. Use
 `--code` to launch VS Code via its `code` command, regardless of your default
 editor. It also works with `hwt` if you want to move your terminal there.
@@ -177,9 +178,9 @@ Dependencies and server ports remain per-worktree concerns; Hop does not start o
 stop servers, switch branches, create, prune, or delete worktrees.
 
 Multiple matches require an interactive terminal; add more search words for
-scripts. `hop worktree --path-only` prints only the selected absolute path, with
+scripts. `hop wt --path-only` prints only the selected absolute path, with
 picker UI on stderr; cancellation emits no path. Explicit project registrations
-named `init` or `worktree` from an older configuration remain accessible through
+named `init`, `wt`, or `worktree` from an older configuration remain accessible through
 `hop open NAME`; new registrations reserve these command names.
 
 ## Troubleshooting
