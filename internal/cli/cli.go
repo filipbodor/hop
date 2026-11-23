@@ -40,6 +40,7 @@ const help = `Hop — your editor workspaces, one command away.
   hop wt --merge              Also open the worktree in Sublime Merge
   hop wt --code               Open a selected worktree in VS Code only
   hop wt --list               List worktrees from current/registered repositories
+  hop wt --all                Include primary checkouts and stale entries
   hop wt --repo PATH          Limit discovery to one repository
   hop hw [WORDS...]           Pick a worktree and change this terminal's directory (Zsh)
   hop init zsh                Print the Zsh integration for hop hw and hwt

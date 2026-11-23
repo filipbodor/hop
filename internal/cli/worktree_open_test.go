@@ -16,33 +16,37 @@ func TestWorktreeListSelectionAndCancellation(t *testing.T) {
 	t.Chdir(t.TempDir())
 	h.want(t, 0, "add", "example", repo)
 	h.want(t, 0, "worktree", "--list")
-	if !strings.Contains(h.out.String(), "feature/review") || !strings.Contains(h.out.String(), other) {
+	if h.out.String() != filepath.Base(repo)+" | feature/review | "+other+"\n" {
 		t.Fatal(h.out.String())
 	}
 	h.want(t, 0, "worktree", "--path-only", "feature/review")
 	if strings.TrimSpace(h.out.String()) != other {
 		t.Fatal(h.out.String())
 	}
-	h.want(t, 1, "worktree", "--path-only")
+	h.want(t, 1, "worktree", "--all", "--path-only")
 	if !strings.Contains(h.stderr.String(), "multiple matching") {
 		t.Fatal(h.stderr.String())
 	}
 	h.app.Interactive = true
 	h.app.In = strings.NewReader("\n")
-	h.want(t, 0, "worktree")
+	h.want(t, 0, "worktree", "--all")
 	if h.out.Len() != 0 || !strings.Contains(h.stderr.String(), "feature/review") {
 		t.Fatal("picker UI must use stderr and cancellation must not emit a path")
 	}
 	h.app.In = strings.NewReader("1\n")
-	h.want(t, 0, "worktree", "--path-only")
+	h.want(t, 0, "worktree", "--all", "--path-only")
 	if !filepath.IsAbs(strings.TrimSpace(h.out.String())) {
 		t.Fatal(h.out.String())
 	}
 	if err := os.RemoveAll(other); err != nil {
 		t.Fatal(err)
 	}
-	h.want(t, 0, "worktree", "--list", "feature/review")
-	if !strings.Contains(h.out.String(), "[missing]") {
+	h.want(t, 1, "worktree", "--list")
+	if !strings.Contains(h.stderr.String(), "--all") {
+		t.Fatal(h.stderr.String())
+	}
+	h.want(t, 0, "worktree", "--all", "--list")
+	if !strings.Contains(h.out.String(), "[missing]") || !strings.Contains(h.out.String(), " | main | "+repo+"\n") {
 		t.Fatal(h.out.String())
 	}
 	h.want(t, 1, "worktree", "--path-only", "feature/review")

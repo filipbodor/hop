@@ -14,6 +14,7 @@ import (
 type worktree struct {
 	Path, Branch, Repo, Head         string
 	Detached, Bare, Prunable, Locked bool
+	Primary, Missing                 bool
 }
 
 func parseWorktrees(data []byte) ([]worktree, error) {
@@ -30,7 +31,7 @@ func parseWorktrees(data []byte) ([]worktree, error) {
 			if value == "" || strings.ContainsAny(value, "\r\n") || !filepath.IsAbs(value) {
 				return nil, fmt.Errorf("unsupported worktree path %q", value)
 			}
-			result = append(result, worktree{Path: value})
+			result = append(result, worktree{Path: value, Primary: len(result) == 0})
 			current = &result[len(result)-1]
 			continue
 		}
@@ -124,6 +125,8 @@ func discoverWorktrees(paths []string) ([]worktree, error) {
 			}
 			seen[tree.Path] = true
 			tree.Repo = repo
+			info, err := os.Stat(tree.Path)
+			tree.Missing = err != nil || !info.IsDir()
 			result = append(result, tree)
 		}
 	}
@@ -146,7 +149,7 @@ func (w worktree) label() string {
 	if w.Prunable {
 		status += " [prunable]"
 	}
-	if info, err := os.Stat(w.Path); err != nil || !info.IsDir() {
+	if w.Missing {
 		status += " [missing]"
 	}
 	return fmt.Sprintf("%s | %s | %s%s", w.Repo, branch, w.Path, status)

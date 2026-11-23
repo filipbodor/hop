@@ -46,6 +46,7 @@ function hwt() {
 
 func (a App) openWorktree(c config, args []string) (int, error) {
 	list, pathOnly, codeOnly, withMerge, options := false, false, false, false, true
+	all := false
 	repo := ""
 	var words []string
 	for i := 0; i < len(args); i++ {
@@ -54,6 +55,8 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 			options = false
 		case options && args[i] == "--list":
 			list = true
+		case options && args[i] == "--all":
+			all = true
 		case options && args[i] == "--path-only":
 			pathOnly = true
 		case options && args[i] == "--code":
@@ -67,7 +70,7 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 			i++
 			repo = args[i]
 		case options && strings.HasPrefix(args[i], "-"):
-			return 0, usageError("usage: hop wt [--repo PATH] [--list | --path-only | --code | --merge] [WORDS...]")
+			return 0, usageError("usage: hop wt [--all] [--repo PATH] [--list | --path-only | --code | --merge] [WORDS...]")
 		default:
 			words = append(words, strings.ToLower(args[i]))
 		}
@@ -110,6 +113,9 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 	}
 	candidates := map[string]project{}
 	for _, tree := range trees {
+		if !all && (tree.Primary || tree.Missing || tree.Prunable) {
+			continue
+		}
 		label := tree.label()
 		matches := true
 		for _, word := range words {
@@ -123,6 +129,9 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 		}
 	}
 	if len(candidates) == 0 {
+		if !all && len(trees) > 0 {
+			return 0, errors.New("no matching linked worktrees; use --all to include primary checkouts and stale entries")
+		}
 		return 0, errors.New("no matching worktrees; register a repository/workspace with hop add, run inside a repository, or use --repo PATH")
 	}
 	if list {

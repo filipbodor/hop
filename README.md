@@ -133,14 +133,17 @@ these checkouts and open a selected one across your tools:
 
 ```sh
 hop wt --list
+hop wt --list --all                           # Include primary checkouts and stale entries
 hop wt feature-name                           # Open in your configured editor
 hop wt --merge feature-name                   # Also open Sublime Merge
 hop wt --repo /path/to/repository feature-name
 hop wt --code feature-name                    # Open just VS Code in a new window
 ```
 
-`hop worktree` is the long form of `hop wt`. Omit the search words in an
-interactive terminal to pick a checkout. Search by
+`hop worktree` is the long form of `hop wt`. By default the picker and list show
+existing linked checkouts. Use `--all` to include primary checkouts and stale
+entries. The same filter applies to `hop hw` and `hwt`. Omit the search words in
+an interactive terminal to pick a checkout. Search by
 repository, branch, short commit ID, or a fragment of the worktree path. Use
 `--code` to launch VS Code via its `code` command, regardless of your default
 editor.
