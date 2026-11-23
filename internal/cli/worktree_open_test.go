@@ -64,7 +64,7 @@ func TestWorktreeLaunchUsesLiteralPathAndKeepsStdoutClean(t *testing.T) {
 	t.Setenv("PATH", tools+string(os.PathListSeparator)+os.Getenv("PATH"))
 	t.Setenv("HOP_WORKTREE_CAPTURE", capture)
 	h.want(t, 0, "editor", "code", "--reuse-window", "--new-window", "-n", "--profile", "Work")
-	h.want(t, 0, "worktree", "--repo", repo, "feature/review")
+	h.want(t, 0, "worktree", "--merge", "--repo", repo, "feature/review")
 	if strings.TrimSpace(h.out.String()) != other {
 		t.Fatal("GUI output polluted destination", h.out.String())
 	}
@@ -85,6 +85,18 @@ func TestWorktreeLaunchUsesLiteralPathAndKeepsStdoutClean(t *testing.T) {
 	if err := os.WriteFile(capture, nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
+	h.want(t, 0, "wt", "--repo", repo, "feature/review")
+	data, err = os.ReadFile(capture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := other + "\n--profile\nWork\n--new-window\n" + other + "\n"; string(data) != want {
+		t.Fatalf("expected only the configured editor by default, got %q", data)
+	}
+
+	if err := os.WriteFile(capture, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
 	h.want(t, 0, "editor", "different-editor")
 	h.want(t, 0, "wt", "--code", "--repo", repo, "feature/review")
 	if strings.TrimSpace(h.out.String()) != other {
@@ -99,6 +111,9 @@ func TestWorktreeLaunchUsesLiteralPathAndKeepsStdoutClean(t *testing.T) {
 	}
 	h.want(t, 2, "worktree", "--code", "--list")
 	h.want(t, 2, "worktree", "--code", "--path-only")
+	h.want(t, 2, "wt", "--merge", "--list")
+	h.want(t, 2, "wt", "--merge", "--path-only")
+	h.want(t, 2, "wt", "--merge", "--code")
 }
 
 func TestWorktreeWindowArgumentsPreserveEditorConfiguration(t *testing.T) {

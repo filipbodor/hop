@@ -28,7 +28,7 @@ function hwt() {
 `
 
 func (a App) openWorktree(c config, args []string) (int, error) {
-	list, pathOnly, codeOnly, options := false, false, false, true
+	list, pathOnly, codeOnly, withMerge, options := false, false, false, false, true
 	repo := ""
 	var words []string
 	for i := 0; i < len(args); i++ {
@@ -41,6 +41,8 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 			pathOnly = true
 		case options && args[i] == "--code":
 			codeOnly = true
+		case options && args[i] == "--merge":
+			withMerge = true
 		case options && args[i] == "--repo":
 			if i+1 >= len(args) {
 				return 0, usageError("--repo requires a repository directory")
@@ -48,7 +50,7 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 			i++
 			repo = args[i]
 		case options && strings.HasPrefix(args[i], "-"):
-			return 0, usageError("usage: hop wt [--repo PATH] [--list | --path-only | --code] [WORDS...]")
+			return 0, usageError("usage: hop wt [--repo PATH] [--list | --path-only | --code | --merge] [WORDS...]")
 		default:
 			words = append(words, strings.ToLower(args[i]))
 		}
@@ -58,6 +60,9 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 	}
 	if codeOnly && (list || pathOnly) {
 		return 0, usageError("--code requires opening a worktree; choose --code, --list, or --path-only")
+	}
+	if withMerge && (list || pathOnly || codeOnly) {
+		return 0, usageError("--merge cannot be combined with --list, --path-only, or --code")
 	}
 	var folders []string
 	if repo != "" {
@@ -142,7 +147,7 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 		if codeOnly {
 			editor = []string{"code"}
 		}
-		if err := a.launchWorktree(editor, target, !codeOnly); err != nil {
+		if err := a.launchWorktree(editor, target, withMerge); err != nil {
 			return 0, err
 		}
 	}

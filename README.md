@@ -133,7 +133,8 @@ these checkouts and open a selected one across your tools:
 
 ```sh
 hop wt --list
-hop wt feature-name
+hop wt feature-name                           # Open in your configured editor
+hop wt --merge feature-name                   # Also open Sublime Merge
 hop wt --repo /path/to/repository feature-name
 hop wt --code feature-name                    # Open just VS Code in a new window
 ```
@@ -164,15 +165,16 @@ eval "$(hop init zsh)"
 Then open a new terminal and use:
 
 ```sh
-hwt                       # Pick, open editor + Sublime Merge, and cd
+hwt                       # Pick, open editor, and cd
+hwt --merge               # Also open Sublime Merge
 hwt project review        # Filter by repository, branch, and/or path fragments
 hwt --list                # List only; no apps or directory change
 hwt --path-only review    # Pick and cd without launching apps
 ```
 
-The configured default editor is used, with a new window for VS Code/Cursor.
-Sublime Merge uses `smerge` on PATH or the standard macOS app installation. Both
-commands receive the same directory and run with it as their working directory.
+The configured editor is used, with a new window for VS Code/Cursor. Use
+`--merge` to also open the checkout in Sublime Merge via `smerge` on PATH or the
+standard macOS app installation. Both apps receive the same checkout directory.
 The current terminal then lands there, ready for your usual server command.
 Dependencies and server ports remain per-worktree concerns; Hop does not start or
 stop servers, switch branches, create, prune, or delete worktrees.
