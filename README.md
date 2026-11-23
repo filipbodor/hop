@@ -124,6 +124,9 @@ Hop for your projects. The Hop executable must be installed separately.
 
 ## Worktree sessions
 
+If you already have a Codex worktree chat open, the **Open** button in its header
+opens the chat's checkout in your IDE. [Codex worktree guide](https://learn.chatgpt.com/docs/environments/git-worktrees#option-1-working-on-the-worktree)
+
 Git worktrees are separate checkout directories sharing one repository's history.
 Each can keep a different branch and its own uncommitted changes. Hop can discover
 these checkouts and open a selected one across your tools:
@@ -132,7 +135,13 @@ these checkouts and open a selected one across your tools:
 hop worktree --list
 hop worktree feature-name
 hop worktree --repo /path/to/repository feature-name
+hop worktree --code feature-name                    # Open just VS Code in a new window
 ```
+
+Omit the search words in an interactive terminal to pick a checkout. Search by
+repository, branch, short commit ID, or a fragment of the worktree path. Use
+`--code` to launch VS Code via its `code` command, regardless of your default
+editor. It also works with `hwt` if you want to move your terminal there.
 
 Discovery uses Git's worktree metadata from the current repository and registered
 project folders, including local folders listed in JSON `.code-workspace` files.

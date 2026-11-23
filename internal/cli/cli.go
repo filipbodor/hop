@@ -36,6 +36,7 @@ const help = `Hop — your editor workspaces, one command away.
   hop config                  Print the private config location
   hop open [NAME]             Explicit form of hop NAME
   hop worktree [WORDS...]     Pick a Git worktree and open editor + Sublime Merge
+  hop worktree --code         Open a selected worktree in VS Code only
   hop worktree --list         List worktrees from current/registered repositories
   hop worktree --repo PATH    Limit discovery to one repository
   hop init zsh                Print the hwt helper to also move this terminal

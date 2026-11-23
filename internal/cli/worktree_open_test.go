@@ -81,6 +81,24 @@ func TestWorktreeLaunchUsesLiteralPathAndKeepsStdoutClean(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(other, "PWNED")); !os.IsNotExist(err) {
 		t.Fatal("path was evaluated")
 	}
+
+	if err := os.WriteFile(capture, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	h.want(t, 0, "editor", "different-editor")
+	h.want(t, 0, "worktree", "--code", "--repo", repo, "feature/review")
+	if strings.TrimSpace(h.out.String()) != other {
+		t.Fatal(h.out.String())
+	}
+	data, err = os.ReadFile(capture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := other + "\n--new-window\n" + other + "\n"; string(data) != want {
+		t.Fatalf("expected a single VS Code launch with the worktree path, got %q", data)
+	}
+	h.want(t, 2, "worktree", "--code", "--list")
+	h.want(t, 2, "worktree", "--code", "--path-only")
 }
 
 func TestWorktreeWindowArgumentsPreserveEditorConfiguration(t *testing.T) {

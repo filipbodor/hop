@@ -28,7 +28,7 @@ function hwt() {
 `
 
 func (a App) openWorktree(c config, args []string) (int, error) {
-	list, pathOnly, options := false, false, true
+	list, pathOnly, codeOnly, options := false, false, false, true
 	repo := ""
 	var words []string
 	for i := 0; i < len(args); i++ {
@@ -39,6 +39,8 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 			list = true
 		case options && args[i] == "--path-only":
 			pathOnly = true
+		case options && args[i] == "--code":
+			codeOnly = true
 		case options && args[i] == "--repo":
 			if i+1 >= len(args) {
 				return 0, usageError("--repo requires a repository directory")
@@ -46,13 +48,16 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 			i++
 			repo = args[i]
 		case options && strings.HasPrefix(args[i], "-"):
-			return 0, usageError("usage: hop worktree [--repo PATH] [--list | --path-only] [WORDS...]")
+			return 0, usageError("usage: hop worktree [--repo PATH] [--list | --path-only | --code] [WORDS...]")
 		default:
 			words = append(words, strings.ToLower(args[i]))
 		}
 	}
 	if list && pathOnly {
 		return 0, usageError("choose --list or --path-only")
+	}
+	if codeOnly && (list || pathOnly) {
+		return 0, usageError("--code requires opening a worktree; choose --code, --list, or --path-only")
 	}
 	var folders []string
 	if repo != "" {
@@ -133,7 +138,11 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 		return 0, err
 	}
 	if !pathOnly {
-		if err := a.launchWorktree(c.Editor, target); err != nil {
+		editor := c.Editor
+		if codeOnly {
+			editor = []string{"code"}
+		}
+		if err := a.launchWorktree(editor, target, !codeOnly); err != nil {
 			return 0, err
 		}
 	}
@@ -157,20 +166,23 @@ func mergeExecutable() (string, error) {
 	return "", errors.New("Sublime Merge not found; install its smerge CLI or macOS application")
 }
 
-func (a App) launchWorktree(editor []string, target string) error {
+func (a App) launchWorktree(editor []string, target string, withMerge bool) error {
 	if len(editor) == 0 {
 		return errors.New("configure an editor with hop editor COMMAND")
 	}
 	if _, err := exec.LookPath(editor[0]); err != nil {
 		return fmt.Errorf("editor %q not found: %w", editor[0], err)
 	}
-	merge, err := mergeExecutable()
-	if err != nil {
-		return err
+	commands := [][]string{worktreeEditorCommand(editor)}
+	if withMerge {
+		merge, err := mergeExecutable()
+		if err != nil {
+			return err
+		}
+		commands = append(commands, []string{merge})
 	}
-	command := worktreeEditorCommand(editor)
-	for _, args := range [][]string{append(command, target), {merge, target}} {
-		cmd := exec.Command(args[0], args[1:]...)
+	for _, args := range commands {
+		cmd := exec.Command(args[0], append(args[1:], target)...)
 		cmd.Dir = target // GUI CLIs also work when the caller's original cwd was removed.
 		cmd.Stdin, cmd.Stdout, cmd.Stderr = a.In, a.Err, a.Err
 		if err := cmd.Run(); err != nil {
