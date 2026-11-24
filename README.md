@@ -133,6 +133,7 @@ these checkouts and open a selected one across your tools:
 
 ```sh
 hop wt --list
+hop wt -n                                    # Sort alphabetically by name
 hop wt --list --all                           # Include primary checkouts and stale entries
 hop wt feature-name                           # Open in your configured editor
 hop wt --merge feature-name                   # Also open Sublime Merge
@@ -141,8 +142,11 @@ hop wt --code feature-name                    # Open just VS Code in a new windo
 ```
 
 `hop worktree` is the long form of `hop wt`. By default the picker and list show
-existing linked checkouts. Use `--all` to include primary checkouts and stale
-entries. The same filter applies to `hop hw` and `hwt`. Omit the search words in
+existing linked checkouts, newest first by directory creation time. Entries
+with the same or unavailable creation time sort alphabetically, with undated
+entries last. Use `-n` for alphabetical order across the list or `--all` to
+include primary checkouts and stale entries. These options also work with
+`hop hw` and `hwt`. Omit the search words in
 an interactive terminal to pick a checkout. Search by
 repository, branch, short commit ID, or a fragment of the worktree path. Use
 `--code` to launch VS Code via its `code` command, regardless of your default

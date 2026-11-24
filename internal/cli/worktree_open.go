@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 )
 
@@ -46,7 +47,7 @@ function hwt() {
 
 func (a App) openWorktree(c config, args []string) (int, error) {
 	list, pathOnly, codeOnly, withMerge, options := false, false, false, false, true
-	all := false
+	all, byName := false, false
 	repo := ""
 	var words []string
 	for i := 0; i < len(args); i++ {
@@ -57,6 +58,8 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 			list = true
 		case options && args[i] == "--all":
 			all = true
+		case options && args[i] == "-n":
+			byName = true
 		case options && args[i] == "--path-only":
 			pathOnly = true
 		case options && args[i] == "--code":
@@ -70,7 +73,7 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 			i++
 			repo = args[i]
 		case options && strings.HasPrefix(args[i], "-"):
-			return 0, usageError("usage: hop wt [--all] [--repo PATH] [--list | --path-only | --code | --merge] [WORDS...]")
+			return 0, usageError("usage: hop wt [-n] [--all] [--repo PATH] [--list | --path-only | --code | --merge] [WORDS...]")
 		default:
 			words = append(words, strings.ToLower(args[i]))
 		}
@@ -111,7 +114,8 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	candidates := map[string]project{}
+	candidates := map[string]worktree{}
+	var names []string
 	for _, tree := range trees {
 		if !all && (tree.Primary || tree.Missing || tree.Prunable) {
 			continue
@@ -125,24 +129,33 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 			}
 		}
 		if matches {
-			candidates[label] = project{Path: tree.Path}
+			names = append(names, label)
+			candidates[label] = tree
 		}
 	}
-	if len(candidates) == 0 {
+	if len(names) == 0 {
 		if !all && len(trees) > 0 {
 			return 0, errors.New("no matching linked worktrees; use --all to include primary checkouts and stale entries")
 		}
 		return 0, errors.New("no matching worktrees; register a repository/workspace with hop add, run inside a repository, or use --repo PATH")
 	}
+	slices.SortFunc(names, func(a, b string) int {
+		if !byName {
+			if order := candidates[b].CreatedAt.Compare(candidates[a].CreatedAt); order != 0 {
+				return order
+			}
+		}
+		return strings.Compare(a, b)
+	})
 	if list {
-		for _, name := range sortedNames(candidates) {
+		for _, name := range names {
 			fmt.Fprintln(a.Out, name)
 		}
 		return 0, nil
 	}
 	selected := ""
-	if len(candidates) == 1 {
-		selected = sortedNames(candidates)[0]
+	if len(names) == 1 {
+		selected = names[0]
 	} else {
 		if !a.Interactive {
 			return 0, errors.New("multiple matching worktrees; use more search words, --list, or run in an interactive terminal")
@@ -150,10 +163,10 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 		picker := a
 		picker.Out = a.Err // stdout is reserved for the selected path, including under $(...).
 		display := map[string]project{}
-		for name := range candidates {
+		for _, name := range names {
 			display[name] = project{}
 		}
-		selected, err = picker.choose(display)
+		selected, err = picker.choose(display, names)
 		if errors.Is(err, io.EOF) {
 			return 130, nil
 		}

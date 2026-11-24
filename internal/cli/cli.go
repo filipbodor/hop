@@ -35,11 +35,12 @@ const help = `Hop — your editor workspaces, one command away.
   hop editor COMMAND [ARGS]   Set editor executable and arguments
   hop config                  Print the private config location
   hop open [NAME]             Explicit form of hop NAME
-  hop wt [WORDS...]           Pick a worktree and open the configured editor
+  hop wt [WORDS...]           Pick a worktree (newest first) and open the editor
   hop worktree [WORDS...]     Long form of hop wt
   hop wt --merge              Also open the worktree in Sublime Merge
   hop wt --code               Open a selected worktree in VS Code only
   hop wt --list               List worktrees from current/registered repositories
+  hop wt -n                   Sort worktrees alphabetically by name
   hop wt --all                Include primary checkouts and stale entries
   hop wt --repo PATH          Limit discovery to one repository
   hop hw [WORDS...]           Pick a worktree and change this terminal's directory (Zsh)
@@ -228,7 +229,7 @@ func (a App) run(args []string) (int, error) {
 			name = args[0]
 		} else {
 			var err error
-			name, err = a.choose(c.Projects)
+			name, err = a.choose(c.Projects, sortedNames(c.Projects))
 			if errors.Is(err, io.EOF) {
 				return 130, nil
 			}
@@ -281,14 +282,13 @@ func sortedNames(projects map[string]project) []string {
 	return names
 }
 
-func (a App) choose(projects map[string]project) (string, error) {
-	if len(projects) == 0 {
+func (a App) choose(projects map[string]project, names []string) (string, error) {
+	if len(names) == 0 {
 		return "", errors.New("no projects yet; register one with: hop add NAME [PATH]")
 	}
 	if !a.Interactive {
 		return "", errors.New("choose a project with hop NAME, or run hop in an interactive terminal")
 	}
-	names := sortedNames(projects)
 	matches := names
 	scanner := bufio.NewScanner(a.In)
 	for {

@@ -52,6 +52,48 @@ func TestWorktreeListSelectionAndCancellation(t *testing.T) {
 	h.want(t, 1, "worktree", "--path-only", "feature/review")
 }
 
+func TestWorktreeListAndPickerUseSameSortOrder(t *testing.T) {
+	h := newHarness(t)
+	repo, older := worktreeFixture(t)
+	newer := filepath.Join(filepath.Dir(repo), "later checkout")
+	gitTest(t, repo, "worktree", "add", "-b", "feature/zulu", newer)
+
+	olderInfo, err := os.Stat(older)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newerInfo, err := os.Stat(newer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstByDate := newer
+	if !checkoutCreatedAt(newer, newerInfo).After(checkoutCreatedAt(older, olderInfo)) {
+		// Some filesystems omit birth timestamps or store both at the same precision.
+		firstByDate = older
+	}
+
+	for _, test := range []struct {
+		flags []string
+		want  string
+	}{
+		{want: firstByDate},
+		{flags: []string{"-n"}, want: older},
+	} {
+		args := append([]string{"wt", "--repo", repo}, test.flags...)
+		h.want(t, 0, append(args, "--list", "feature/")...)
+		first, _, _ := strings.Cut(h.out.String(), "\n")
+		if !strings.HasSuffix(first, " | "+test.want) {
+			t.Fatalf("first listed worktree %q should end in %q", first, test.want)
+		}
+		h.app.Interactive = true
+		h.app.In = strings.NewReader("feature/\n1\n")
+		h.want(t, 0, append(args, "--path-only")...)
+		if got := strings.TrimSpace(h.out.String()); got != test.want {
+			t.Fatalf("selected %q, want %q", got, test.want)
+		}
+	}
+}
+
 func TestWorktreeLaunchUsesLiteralPathAndKeepsStdoutClean(t *testing.T) {
 	h := newHarness(t)
 	repo, other := worktreeFixture(t)

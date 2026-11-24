@@ -7,14 +7,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
+	"time"
 )
 
 type worktree struct {
 	Path, Branch, Repo, Head         string
 	Detached, Bare, Prunable, Locked bool
 	Primary, Missing                 bool
+	CreatedAt                        time.Time
 }
 
 func parseWorktrees(data []byte) ([]worktree, error) {
@@ -127,10 +128,12 @@ func discoverWorktrees(paths []string) ([]worktree, error) {
 			tree.Repo = repo
 			info, err := os.Stat(tree.Path)
 			tree.Missing = err != nil || !info.IsDir()
+			if !tree.Missing {
+				tree.CreatedAt = checkoutCreatedAt(tree.Path, info)
+			}
 			result = append(result, tree)
 		}
 	}
-	sort.Slice(result, func(i, j int) bool { return result[i].Path < result[j].Path })
 	return result, nil
 }
 

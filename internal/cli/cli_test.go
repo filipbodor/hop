@@ -281,7 +281,7 @@ func TestPicker(t *testing.T) {
 		t.Run(fmt.Sprintf("%q", tc.input), func(t *testing.T) {
 			h := newHarness(t)
 			h.app.Interactive, h.app.In = true, strings.NewReader(tc.input)
-			got, err := h.app.choose(projects)
+			got, err := h.app.choose(projects, sortedNames(projects))
 			if got != tc.want || (err != nil) != tc.eof {
 				t.Fatalf("got %q, %v", got, err)
 			}
