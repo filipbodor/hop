@@ -141,7 +141,7 @@ func (a App) openWorktree(c config, args []string) (int, error) {
 	}
 	slices.SortFunc(names, func(a, b string) int {
 		if !byName {
-			if order := candidates[b].CreatedAt.Compare(candidates[a].CreatedAt); order != 0 {
+			if order := candidates[a].CreatedAt.Compare(candidates[b].CreatedAt); order != 0 {
 				return order
 			}
 		}

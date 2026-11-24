@@ -56,7 +56,7 @@ func TestWorktreeListAndPickerUseSameSortOrder(t *testing.T) {
 	h := newHarness(t)
 	repo, older := worktreeFixture(t)
 	newer := filepath.Join(filepath.Dir(repo), "later checkout")
-	gitTest(t, repo, "worktree", "add", "-b", "feature/zulu", newer)
+	gitTest(t, repo, "worktree", "add", "-b", "feature/alpha", newer)
 
 	olderInfo, err := os.Stat(older)
 	if err != nil {
@@ -66,10 +66,10 @@ func TestWorktreeListAndPickerUseSameSortOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	firstByDate := newer
-	if !checkoutCreatedAt(newer, newerInfo).After(checkoutCreatedAt(older, olderInfo)) {
-		// Some filesystems omit birth timestamps or store both at the same precision.
-		firstByDate = older
+	firstByDate := older
+	if !checkoutCreatedAt(older, olderInfo).Before(checkoutCreatedAt(newer, newerInfo)) {
+		// Missing timestamps sort first, and equal timestamps use alphabetical order.
+		firstByDate = newer
 	}
 
 	for _, test := range []struct {
@@ -77,7 +77,7 @@ func TestWorktreeListAndPickerUseSameSortOrder(t *testing.T) {
 		want  string
 	}{
 		{want: firstByDate},
-		{flags: []string{"-n"}, want: older},
+		{flags: []string{"-n"}, want: newer},
 	} {
 		args := append([]string{"wt", "--repo", repo}, test.flags...)
 		h.want(t, 0, append(args, "--list", "feature/")...)

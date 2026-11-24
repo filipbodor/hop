@@ -142,9 +142,9 @@ hop wt --code feature-name                    # Open just VS Code in a new windo
 ```
 
 `hop worktree` is the long form of `hop wt`. By default the picker and list show
-existing linked checkouts, newest first by directory creation time. Entries
+existing linked checkouts, oldest first by directory creation time. Entries
 with the same or unavailable creation time sort alphabetically, with undated
-entries last. Use `-n` for alphabetical order across the list or `--all` to
+entries first. Use `-n` for alphabetical order across the list or `--all` to
 include primary checkouts and stale entries. These options also work with
 `hop hw` and `hwt`. Omit the search words in
 an interactive terminal to pick a checkout. Search by

@@ -35,7 +35,7 @@ const help = `Hop — your editor workspaces, one command away.
   hop editor COMMAND [ARGS]   Set editor executable and arguments
   hop config                  Print the private config location
   hop open [NAME]             Explicit form of hop NAME
-  hop wt [WORDS...]           Pick a worktree (newest first) and open the editor
+  hop wt [WORDS...]           Pick a worktree (oldest first) and open the editor
   hop worktree [WORDS...]     Long form of hop wt
   hop wt --merge              Also open the worktree in Sublime Merge
   hop wt --code               Open a selected worktree in VS Code only
